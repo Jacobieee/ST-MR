@@ -1,5 +1,6 @@
 # ST-MR
-Graph-based Spatial Transformer with Memory Replay for Multi-future Pedestrian Trajectory Prediction
+Graph-based Spatial Transformer with Memory Replay for Multi-future Pedestrian Trajectory Prediction.
+
 This paper has been accepted by CVPR 2022.
 
 ## Dataset
