@@ -69,6 +69,8 @@ my_prob.prob.p
 ```
 
 ### For visualization, please refer to [here](https://github.com/JunweiLiang/Multiverse/blob/master/TESTING.md#visualization).
+Images in folder "imgs" show a set of comparison among our model, Multiverse, Social GAN and STGAT.
+
 
 ## Run multi-future inference on [sgan](https://github.com/agrimgupta92/sgan) and [stgat](https://github.com/huang-xx/STGAT).
 Train the models of sgan and stgat and replace the files in these two repos with those in multi_traj_sgan and multi_traj_stgat. 
