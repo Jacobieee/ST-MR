@@ -1,5 +1,6 @@
 # ST-MR
 Graph-based Spatial Transformer with Memory Replay for Multi-future Pedestrian Trajectory Prediction
+This paper has been accepted by CVPR 2022.
 
 ## Dataset
 The dataset we use is [VIRAT/ActEV](https://actev.nist.gov/) and [The Forking Paths](https://github.com/JunweiLiang/Multiverse).
@@ -78,4 +79,6 @@ For example, if run such inference on stgat,
 stgat_output_vp.traj.p``` to get the result. The later steps are the same as the above sections.
 
 
+## Acknowledgements
+Code in this repo is largely borrowed from [Multiverse](https://github.com/JunweiLiang/Multiverse).
 
