@@ -4,7 +4,7 @@
 This paper has been accepted by CVPR 2022.
 
 If you find this work useful for your research, please cite:
-'''
+```
 @InProceedings{Li_2022_CVPR,
     author    = {Li, Lihuan and Pagnucco, Maurice and Song, Yang},
     title     = {Graph-Based Spatial Transformer With Memory Replay for Multi-Future Pedestrian Trajectory Prediction},
@@ -13,7 +13,7 @@ If you find this work useful for your research, please cite:
     year      = {2022},
     pages     = {2231-2241}
 }
-'''
+```
 
 ## Dataset
 The dataset we use is [VIRAT/ActEV](https://actev.nist.gov/) and [The Forking Paths](https://github.com/JunweiLiang/Multiverse).
