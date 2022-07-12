@@ -5,13 +5,12 @@ This paper has been accepted by CVPR 2022.
 
 If you find this work useful for your research, please cite:
 ```
-@InProceedings{Li_2022_CVPR,
-    author    = {Li, Lihuan and Pagnucco, Maurice and Song, Yang},
-    title     = {Graph-Based Spatial Transformer With Memory Replay for Multi-Future Pedestrian Trajectory Prediction},
-    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month     = {June},
-    year      = {2022},
-    pages     = {2231-2241}
+@inproceedings{li2022graph,
+  title={Graph-Based Spatial Transformer With Memory Replay for Multi-Future Pedestrian Trajectory Prediction},
+  author={Li, Lihuan and Pagnucco, Maurice and Song, Yang},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={2231--2241},
+  year={2022}
 }
 ```
 
