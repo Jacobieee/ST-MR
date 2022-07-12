@@ -1,5 +1,5 @@
 # ST-MR
-Graph-based Spatial Transformer with Memory Replay for Multi-future Pedestrian Trajectory Prediction.
+[Graph-based Spatial Transformer with Memory Replay for Multi-future Pedestrian Trajectory Prediction](https://openaccess.thecvf.com/content/CVPR2022/html/Li_Graph-Based_Spatial_Transformer_With_Memory_Replay_for_Multi-Future_Pedestrian_Trajectory_CVPR_2022_paper.html).
 
 This paper has been accepted by CVPR 2022.
 
@@ -42,19 +42,8 @@ python code/test.py actev_preprocess models my_model/ \
 ```
 
 ## Testing multi-future prediction
-### Run inference and save trajectories.
-```
-python code/multifuture_inference.py forking_paths_dataset/next_x_v1_dataset_prepared_data/obs_data/traj_2.5fps/test/ \
-forking_paths_dataset/next_x_v1_dataset_prepared_data/multifuture/test/ \
-models/my_model/00/best/ \
-my_traj.traj.p --save_prob_file my_prob.prob.p \
---obs_len 8 --emb_size 32 --enc_hidden_size 256 --dec_hidden_size 256 \
---use_scene_enc --scene_id2name prepared_data/scene36_64_id2name_top10.json \
---scene_feat_path forking_paths_dataset/next_x_v1_dataset_prepared_data/obs_data/scene_seg/ \
---scene_h 36 --scene_w 64 --scene_conv_kernel 3 --scene_conv_dim 64 \
---grid_strides 2,4 --use_grids 1,0 --num_out 20 --diverse_beam \
---diverse_gamma 0.01 --fix_num_timestep 1 --gpuid 0 --add_self_attn --add_mr
-```
+### Run inference and visualization, please refer to [here](https://github.com/JunweiLiang/Multiverse/blob/master/TESTING.md#multi-future-trajectory-prediction).
+
 
 ### run minADEk and minFDEk, as well as generate a trajectory usage file named "traj_usage". This is a pickles file that contains the PTU result.
 ```
