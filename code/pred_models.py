@@ -171,6 +171,12 @@ class Model(object):
     if config.is_train:
       self.build_loss()
 
+  def print(self, tensor, message='', print_tensors=None):
+    if print_tensors:
+      print_tensors = [tensor]
+    
+    return tf.Print(tensor, print_tensors, message + str(tensor.shape), summarize=50)
+
   def build_forward(self):
     """Build the forward model graph."""
     config = self.config
@@ -616,7 +622,7 @@ class Model(object):
 
           elements_finished = time >= pred_length
           finished = tf.reduce_all(elements_finished)
-
+          next_loop_state =tf.zeros([N, H*W, H*W], dtype=tf.float32)
           # h_{t-1}  # [H, W, h_dim]
           with tf.name_scope("prepare_next_cell_state"):
             # LSTMStateTuple, will have c, h, c is the cell memory state and h
@@ -644,9 +650,22 @@ class Model(object):
 
               # update edge weights by the memory graph.
               if config.add_mr:
-                edge_weights = edge_weights + self.graph_mem[scale_idx]
+                
+                edge_weights = tf.reshape(edge_weights, [N, H*W, H*W])
+
+                graph_mem = loop_state if loop_state is not None else tf.zeros_like(edge_weights)
+                # print graph_mem states....
+                # graph_mem = self.print(graph_mem, f"graph_mem {len(tf.get_collection(f'memory_{scale_idx}'))} \n ", [time, graph_mem])
+                # edge_weights = tf.nn.softmax(edge_weights + graph_mem)
+                edge_weights = linear(edge_weights+graph_mem, output_size=H*W, add_bias=True,
+                                 activation=config.activation_func, scope="mr_linear")
+                # print edge_weights....
+                
+                # edge_weights = edge_weights + self.graph_mem[scale_idx]
                 # update the memory graph.
-                self.graph_mem[scale_idx] = edge_weights
+                # self.graph_mem[scale_idx] = edge_weights
+                next_loop_state = edge_weights
+                edge_weights = tf.reshape(edge_weights, [N, H, W, H, W])
               
               # 2. mask non-neighbor nodes' edge weight
               #  non-neighbor location will have very negative number
@@ -734,17 +753,17 @@ class Model(object):
             next_input = grid_emb
 
           return elements_finished, next_input, next_cell_state, \
-              emit_output, None  # next_loop_state
+              emit_output, next_loop_state  # next_loop_state
 
         decoder_out_ta, _, _ = tf.nn.raw_rnn(
             rnn_cell, decoder_loop_fn, scope="decoder_rnn")
 
-        if config.add_mr:
-            # return to 0 graph memory.
-            if scale_idx == 0:
-              self.graph_mem[scale_idx] = tf.zeros([N, 18, 32, config.dec_hidden_size], dtype=tf.float32)
-            else:
-              self.graph_mem[scale_idx] = tf.zeros([N, 9, 16, config.dec_hidden_size], dtype=tf.float32)
+        # if config.add_mr:
+        #     # return to 0 graph memory.
+        #     if scale_idx == 0:
+        #       self.graph_mem[scale_idx] = tf.zeros([N, 18, 32, config.dec_hidden_size], dtype=tf.float32)
+        #     else:
+        #       self.graph_mem[scale_idx] = tf.zeros([N, 9, 16, config.dec_hidden_size], dtype=tf.float32)
 
       with tf.name_scope("reconstruct_output"):
         decoder_out_h = decoder_out_ta.stack()  # [T2, N, [H, W], h_dim]
@@ -804,6 +823,8 @@ class Model(object):
 
         initial_logprob = tf.zeros([N, beam_size], dtype=tf.float32)
 
+        graph_mem_init = tf.zeros([N, H*W, H*W], dtype=tf.float32)
+
 
       # loop will run from time=0 to time=pred_length # note the extra 1
       def decoder_loop_fn(time, cell_output, cell_state, loop_state):
@@ -822,19 +843,21 @@ class Model(object):
           next_input_grid = tf.reshape(initial_input,
                                        [N * beam_size, H, W, 1])
 
-
           # put the output stuff into loop_state
           # also need a variable to remember each beam's total log prob
+          graph_mem = graph_mem_init
           next_loop_state = (output_grid_ids,
                              output_parent_idxs,
                              output_logits,
-                             initial_logprob)
+                             initial_logprob,
+                             graph_mem_init)
 
         else:
           (output_grid_ids_inloop,
            output_parent_idxs_inloop,
            output_logits_inloop,
-           prev_logprob) = loop_state
+           prev_logprob,
+           graph_mem) = loop_state
           # compute the classification logits first
           # cell_output [N*beam_size, H, W, h_dim]
           # -> [N*beam_size, H, W, 1]
@@ -917,7 +940,8 @@ class Model(object):
           next_loop_state = (output_grid_ids_inloop,
                              output_parent_idxs_inloop,
                              output_logits_inloop,
-                             new_logprobs)
+                             new_logprobs,
+                             graph_mem)
 
         if use_gnn:
 
@@ -937,8 +961,24 @@ class Model(object):
                                            additional_scope="gnn_%s" % scope)
 
           if config.add_mr:
-              edge_weights = edge_weights + self.graph_mem[scale_idx]
-              self.graph_mem[scale_idx] = edge_weights
+              # edge_weights = edge_weights + self.graph_mem[scale_idx]
+              # self.graph_mem[scale_idx] = edge_weights
+              edge_weights = tf.reshape(edge_weights, [N*beam_size, H*W, H*W])
+              edge_weights = linear(edge_weights+graph_mem, output_size=H*W, add_bias=True,
+                                 activation=config.activation_func, scope="mr_linear")
+              # edge_weights = tf.nn.softmax(edge_weights + graph_mem)
+              # print edge_weights....
+
+              # edge_weights = edge_weights + self.graph_mem[scale_idx]
+              # update the memory graph.
+              # self.graph_mem[scale_idx] = edge_weights
+              next_loop_state = list(next_loop_state)
+              next_loop_state[-1] = edge_weights
+              # next_loop_state[-1] = self.print(next_loop_state[-1], f"graph_mem {len(tf.get_collection(f'memory_{scale_idx}'))} \n ", [time, next_loop_state[-1]])
+              # could pass in a list
+              # next_loop_state = tuple(next_loop_state) 
+
+          edge_weights = tf.reshape(edge_weights, [N*beam_size, H, W, H, W])
           # 2. mask non-neighbor nodes' edge weight
           #  non-neighbor location will have very negative number
           edge_weights = self.gnn_mask_edge(edge_weights, use_exp_mask=True)
@@ -976,21 +1016,20 @@ class Model(object):
           output_grid_ids_ta,
           output_parent_idxs_ta,
           output_logits_ta,
-          final_logprobs) = tf.nn.raw_rnn(rnn_cell,
+          final_logprobs, _) = tf.nn.raw_rnn(rnn_cell,
                                           decoder_loop_fn,
                                           scope="decoder_rnn")
-      if config.add_mr:
-          # return to 0 graph memory.
-          if scale_idx == 0:
-            self.graph_mem[scale_idx] = tf.zeros([N, 18, 32, config.dec_hidden_size], dtype=tf.float32)
-          else:
-            self.graph_mem[scale_idx] = tf.zeros([N, 9, 16, config.dec_hidden_size], dtype=tf.float32)
+      # if config.add_mr:
+      #     # return to 0 graph memory.
+      #     if scale_idx == 0:
+      #       self.graph_mem[scale_idx] = tf.zeros([N, 18, 32, config.dec_hidden_size], dtype=tf.float32)
+      #     else:
+      #       self.graph_mem[scale_idx] = tf.zeros([N, 9, 16, config.dec_hidden_size], dtype=tf.float32)
       # reconstruct the output
       # [Time, N, beam_size, ..]
       output_grid_ids = output_grid_ids_ta.stack()
       output_parent_idxs = output_parent_idxs_ta.stack()
       output_logits = output_logits_ta.stack()
-
 
       # trace back to reconstruct the actual sequence
       max_timestep = tf.shape(output_grid_ids)[0]
